@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="unknow.eclipse"
+      label="EclipseLauncher"
+      version="1.1"
+      license-feature="com.gnu.lgpl"
+      license-feature-version="3">
+
+   <description>
+      A custom launcher view
+   </description>
+
+   <plugin
+         id="unknow.eclipse.launcher"
+         download-size="0"
+         install-size="0"
+         version="1.1.0"
+         unpack="false"/>
+
+</feature>

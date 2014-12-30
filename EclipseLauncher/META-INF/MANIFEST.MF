@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: EclipseLauncher
+Bundle-SymbolicName: unknow.eclipse.launcher;singleton:=true
+Bundle-Activator: unknow.eclipse.launcher.LauncherViewActivator
+Bundle-Version: 1.1
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.ui,
+ org.eclipse.debug.core,
+ org.eclipse.debug.ui
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy

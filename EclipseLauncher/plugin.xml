@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+   <extension point="org.eclipse.ui.views">
+      <view
+            name="Launcher"
+            icon="icons/run_exc.gif"
+            category="org.eclipse.jdt.ui.java"
+            class="unknow.eclipse.launcher.LauncherView"
+            id="unknow.eclipse.launcher.LauncherView">
+      </view>
+   </extension>
+</plugin>
