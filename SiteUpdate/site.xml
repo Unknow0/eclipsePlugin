@@ -3,8 +3,7 @@
    <description name="Unknow&apos;s Plugin" url="http://unknow.hd.free.fr/eclipse/">
       plugin developper by and for unknow
    </description>
-   <feature url="features/com.gnu.lgpl_1.0.0.qualifier.jar" id="com.gnu.lgpl" version="3"/>
-   <feature url="features/unknow.eclipse_1.1.0.jar" id="unknow.eclipse" version="1.1">
+   <feature url="features/unknow.eclipse_1.1.1.jar" id="unknow.eclipse" version="1.1.1">
       <category name="unknow"/>
    </feature>
    <category-def name="unknow" label="Unknow">

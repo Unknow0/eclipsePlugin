@@ -119,16 +119,7 @@ public class NameProvider extends AbstractContentProvider
 			list.add(l[i]);
 			listByProject.add(l[i]);
 			}
-
-		Queue<TreeNode> queue=new LinkedList<TreeNode>();
-		queue.offer(root);
-		while (!queue.isEmpty())
-			{
-			TreeNode n=queue.poll();
-			n.buildChild();
-			if(n.depth<order.length)
-				queue.addAll(n.childs);
-			}
+		root.buildChild();
 		}
 
 	public static enum Type
@@ -169,8 +160,12 @@ public class NameProvider extends AbstractContentProvider
 			switch (depth==order.length?Type.LAUNCHER:order[depth])
 				{
 				case WORKINGSET:
-					for(IWorkingSet w:workingSets)
-						childs.add(new TreeNode(depth+1, w.getName(), w, Type.WORKINGSET));
+					for(IWorkingSet w:workingSets) {
+						TreeNode n=new TreeNode(depth+1, w.getName(), w, Type.WORKINGSET);
+						n.buildChild();
+						if(!n.childs.isEmpty())
+							childs.add(n);
+					}
 //					childs.add(new TreeNode(depth+1, "Other Project", null, Type.WORKINGSET));
 					break;
 				case PROJECT:
@@ -186,7 +181,10 @@ public class NameProvider extends AbstractContentProvider
 					for(int i=0; i<elements.length; i++)
 						{
 						IProject p=(IProject)elements[i].getAdapter(IProject.class);
-						childs.add(new TreeNode(depth+1, p.getName(), p, Type.PROJECT));
+						TreeNode n=new TreeNode(depth+1, p.getName(), p, Type.PROJECT);
+						n.buildChild();
+						if(!n.childs.isEmpty())
+							childs.add(n);
 						}
 					break;
 				case BUILDTYPE:
@@ -200,8 +198,12 @@ public class NameProvider extends AbstractContentProvider
 
 					if(list!=null)
 						{
-						for(ILaunchConfiguration l:list)
-							childs.add(new TreeNode(depth+1, l.getName(), l, Type.LAUNCHER));
+						for(ILaunchConfiguration l:list) {
+							TreeNode n=new TreeNode(depth+1, l.getName(), l, Type.LAUNCHER);
+							n.buildChild();
+							if(!n.childs.isEmpty())
+								childs.add(n);
+						}
 						}
 					break;
 				}
@@ -212,5 +214,4 @@ public class NameProvider extends AbstractContentProvider
 			return name;
 			}
 		}
-
 	}
