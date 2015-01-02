@@ -122,7 +122,7 @@ public class LauncherView extends ViewPart
 
 	private void hookContextMenu()
 		{
-		MenuManager menuMgr=new MenuManager("#PopupMenu");
+		MenuManager menuMgr=new MenuManager("#truc");
 		menuMgr.setRemoveAllWhenShown(true);
 		menuMgr.addMenuListener(new IMenuListener()
 			{

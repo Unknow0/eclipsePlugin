@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: EclipseLauncher
 Bundle-SymbolicName: unknow.eclipse.launcher;singleton:=true
 Bundle-Activator: unknow.eclipse.launcher.LauncherViewActivator
-Bundle-Version: 1.1.1
+Bundle-Version: 1.1.6
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.ui,
  org.eclipse.debug.core,
