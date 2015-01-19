@@ -73,14 +73,14 @@ abstract class AbstractContentProvider implements IStructuredContentProvider, IT
 
 	public void launchConfigurationChanged(ILaunchConfiguration configuration)
 		{
-		try
-			{
-			resetData();
-			}
-		catch (CoreException e)
-			{
-			throw new RuntimeException(e);
-			}
-		view.refresh();
+//		try
+//			{
+//			resetData();
+//			}
+//		catch (CoreException e)
+//			{
+//			throw new RuntimeException(e);
+//			}
+//		view.refresh();
 		}
 	}
