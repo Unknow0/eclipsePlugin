@@ -10,13 +10,23 @@
  ******************************************************************************/
 package unknow.eclipse.launcher;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import org.eclipse.core.resources.*;
-import org.eclipse.core.runtime.*;
-import org.eclipse.debug.core.*;
-import org.eclipse.ui.*;
-import org.osgi.framework.*;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchConfigurationType;
+import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.ui.IWorkingSet;
+import org.eclipse.ui.IWorkingSetManager;
+import org.eclipse.ui.PlatformUI;
+import org.osgi.framework.InvalidSyntaxException;
 
 public class NameProvider extends AbstractContentProvider {
 	private final TreeNode root = new TreeNode(0, "root");
@@ -30,9 +40,13 @@ public class NameProvider extends AbstractContentProvider {
 
 	private Type[] order = new Type[] { Type.WORKINGSET, Type.PROJECT };
 
-	public NameProvider(LauncherView sampleView) throws CoreException,
-			InvalidSyntaxException {
+	private IWorkingSetManager manager;
+	private IWorkingSet otherProject;
+
+	public NameProvider(LauncherView sampleView) throws CoreException, InvalidSyntaxException {
 		super(sampleView);
+		manager = PlatformUI.getWorkbench().getWorkingSetManager();
+		otherProject = manager.createWorkingSet("Other Project", new IAdaptable[0]);
 	}
 
 	public Object[] getElements(Object parent) {
@@ -60,43 +74,47 @@ public class NameProvider extends AbstractContentProvider {
 		launchers.clear();
 		launchersByProject.clear();
 
-		IWorkingSetManager manager = PlatformUI.getWorkbench()
-				.getWorkingSetManager();
-		IWorkingSet[] ws = manager.getWorkingSets();
+		workingSets.add(otherProject);
+		IWorkingSet[] ws = manager.getAllWorkingSets();
 		for (int i = 0; i < ws.length; i++) {
 			workingSets.add(ws[i]);
 			IAdaptable[] elements = ws[i].getElements();
 			for (int j = 0; j < elements.length; j++) {
-				IProject project = (IProject) elements[j]
-						.getAdapter(IProject.class);
+				IProject project = (IProject) elements[j].getAdapter(IProject.class);
 				projects.put(project.getName(), project);
 				projectByPath.put(project.getLocation().toString(), project);
-				projectByPath.put("${workspace_loc:" + project.getFullPath()
-						+ "}", project);
+				projectByPath.put("${workspace_loc:" + project.getFullPath() + "}", project);
 				workingSetByProject.put(project, ws[i]);
 			}
 		}
 
-		ILaunchManager launchManager = DebugPlugin.getDefault()
-				.getLaunchManager();
+		IProject[] p = ResourcesPlugin.getWorkspace().getRoot().getProjects();
+		List<IProject> pList = new ArrayList<IProject>();
+		for (int i = 0; i < p.length; i++) {
+			if (!workingSetByProject.containsKey(p[i])) {
+				projects.put(p[i].getName(), p[i]);
+				projectByPath.put("${workspace_loc:" + p[i].getFullPath() + "}", p[i]);
+				workingSetByProject.put(p[i], otherProject);
+				pList.add(p[i]);
+			}
+		}
+		otherProject.setElements(pList.toArray(new IAdaptable[0]));
+
+		ILaunchManager launchManager = DebugPlugin.getDefault().getLaunchManager();
 		launchManager.addLaunchConfigurationListener(this);
 
 		ILaunchConfiguration[] l = launchManager.getLaunchConfigurations();
 		for (int i = 0; i < l.length; i++) {
-			String p = l[i].getAttribute(
-					"org.eclipse.jdt.launching.PROJECT_ATTR", (String) null);
+			String path = l[i].getAttribute("org.eclipse.jdt.launching.PROJECT_ATTR", (String) null);
 			IProject project;
-			if (p == null) {
-				p = l[i].getAttribute(
-						"org.eclipse.jdt.launching.WORKING_DIRECTORY",
-						(String) null);
-				project = projectByPath.get(p);
+			if (path == null) {
+				path = l[i].getAttribute("org.eclipse.jdt.launching.WORKING_DIRECTORY", (String) null);
+				project = projectByPath.get(path);
 			} else
-				project = projects.get(p);
+				project = projects.get(path);
 
 			List<ILaunchConfiguration> list = launchers.get(l[i].getType());
-			List<ILaunchConfiguration> listByProject = launchersByProject
-					.get(project);
+			List<ILaunchConfiguration> listByProject = launchersByProject.get(project);
 			if (list == null) {
 				list = new ArrayList<ILaunchConfiguration>();
 				launchers.put(l[i].getType(), list);
@@ -153,11 +171,11 @@ public class NameProvider extends AbstractContentProvider {
 				return;
 			childs.clear();
 			// log();
+			TreeNode n;
 			switch (depth == order.length ? Type.LAUNCHER : order[depth]) {
 			case WORKINGSET:
 				for (IWorkingSet w : workingSets) {
-					TreeNode n = new TreeNode(depth + 1, w.getName(), w,
-							Type.WORKINGSET);
+					n = new TreeNode(depth + 1, w.getName(), w, Type.WORKINGSET);
 					n.buildChild();
 					if (!n.childs.isEmpty())
 						childs.add(n);
@@ -166,18 +184,13 @@ public class NameProvider extends AbstractContentProvider {
 			case PROJECT:
 				IAdaptable[] elements;
 				if (type == Type.WORKINGSET)
-					if (o != null)
-						elements = ((IWorkingSet) o).getElements();
-					else
-						elements = new IAdaptable[0];
+					elements = ((IWorkingSet) o).getElements();
 				else
 					elements = new IAdaptable[0];
 
 				for (int i = 0; i < elements.length; i++) {
-					IProject p = (IProject) elements[i]
-							.getAdapter(IProject.class);
-					TreeNode n = new TreeNode(depth + 1, p.getName(), p,
-							Type.PROJECT);
+					IProject p = (IProject) elements[i].getAdapter(IProject.class);
+					n = new TreeNode(depth + 1, p.getName(), p, Type.PROJECT);
 					n.buildChild();
 					if (!n.childs.isEmpty())
 						childs.add(n);
@@ -194,8 +207,7 @@ public class NameProvider extends AbstractContentProvider {
 
 				if (list != null) {
 					for (ILaunchConfiguration l : list)
-						childs.add(new TreeNode(depth + 1, l.getName(), l,
-								Type.LAUNCHER));
+						childs.add(new TreeNode(depth + 1, l.getName(), l, Type.LAUNCHER));
 				}
 				break;
 			}
