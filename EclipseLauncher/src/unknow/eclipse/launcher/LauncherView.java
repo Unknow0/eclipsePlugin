@@ -44,164 +44,203 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
 import org.eclipse.ui.part.ViewPart;
 import org.osgi.framework.InvalidSyntaxException;
 
-import unknow.eclipse.launcher.NameProvider.TreeNode;
-import unknow.eclipse.launcher.NameProvider.Type;
+import unknow.eclipse.launcher.TreeProvider.TreeNode;
+import unknow.eclipse.launcher.TreeProvider.Type;
 
 @SuppressWarnings("restriction")
-public class LauncherView extends ViewPart {
-	private TreeViewer viewer;
+public class LauncherView extends ViewPart
+	{
+	private TreeViewer treeViewer;
 	private Action launch;
 	private Action debug;
 	private OpenRunConfigurations preference;
 
-	private AbstractContentProvider viewContentProvider;
+	private TreeProvider viewContentProvider;
 
-	private final Map<ImageDescriptor, Image> cache = new HashMap<ImageDescriptor, Image>();
+	private final Map<ImageDescriptor,Image> cache=new HashMap<ImageDescriptor,Image>();
 
-	private class ViewLabelProvider extends LabelProvider {
-		IDecoratorManager decoratorManager = getSite().getWorkbenchWindow().getWorkbench().getDecoratorManager();
-		ILabelProvider provider = WorkbenchLabelProvider.getDecoratingWorkbenchLabelProvider();
+	private class ViewLabelProvider extends LabelProvider
+		{
+		IDecoratorManager decoratorManager=getSite().getWorkbenchWindow().getWorkbench().getDecoratorManager();
+		ILabelProvider provider=WorkbenchLabelProvider.getDecoratingWorkbenchLabelProvider();
 
-		public String getText(Object obj) {
+		public String getText(Object obj)
+			{
 			return obj.toString();
-		}
+			}
 
-		public Image getImage(Object obj) {
-			NameProvider.TreeNode n = (NameProvider.TreeNode) obj;
-			
-			Image img = provider.getImage(n.o);
-			if (img != null)
+		public Image getImage(Object obj)
+			{
+			TreeNode n=(TreeNode)obj;
+
+			Image img=provider.getImage(n.o);
+			if(img!=null)
 				return decoratorManager.decorateImage(img, n.o);
 
-			try {
-				IConfigurationElement[] imgCfg = Platform.getExtensionRegistry().getConfigurationElementsFor("org.eclipse.debug.ui.launchConfigurationTypeImages");
-				String type = n.type == Type.BUILDTYPE ? ((ILaunchConfigurationType) n.o).getIdentifier() : ((ILaunchConfiguration) n.o).getType().getIdentifier();
-				for (int i = 0; i < imgCfg.length; i++) {
-					String configTypeID = imgCfg[i].getAttribute("configTypeID");
-					String icon = imgCfg[i].getAttribute("icon");
-					if (configTypeID.equals(type)) {
-						ImageDescriptor imgDesc = LauncherViewActivator.imageDescriptorFromPlugin(imgCfg[i].getContributor().getName(), icon);
-						Image image = cache.get(imgDesc);
-						if (image == null) {
-							image = imgDesc.createImage();
+			try
+				{
+				IConfigurationElement[] imgCfg=Platform.getExtensionRegistry().getConfigurationElementsFor("org.eclipse.debug.ui.launchConfigurationTypeImages");
+				String type=n.type==Type.BUILDTYPE?((ILaunchConfigurationType)n.o).getIdentifier():((ILaunchConfiguration)n.o).getType().getIdentifier();
+				for(int i=0; i<imgCfg.length; i++)
+					{
+					String configTypeID=imgCfg[i].getAttribute("configTypeID");
+					String icon=imgCfg[i].getAttribute("icon");
+					if(configTypeID.equals(type))
+						{
+						ImageDescriptor imgDesc=LauncherViewActivator.imageDescriptorFromPlugin(imgCfg[i].getContributor().getName(), icon);
+						Image image=cache.get(imgDesc);
+						if(image==null)
+							{
+							image=imgDesc.createImage();
 							cache.put(imgDesc, image);
-						}
+							}
 						return image;
+						}
 					}
 				}
-			} catch (CoreException e) {
+			catch (CoreException e)
+				{
 				e.printStackTrace();
-			}
+				}
 			return getDefaultImage();
+			}
 		}
-	}
 
-	class NameSorter extends ViewerSorter {
-	}
+	class NameSorter extends ViewerSorter
+		{
+		}
 
-	public LauncherView() throws CoreException, InvalidSyntaxException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-		viewContentProvider = new NameProvider(this);
+	public LauncherView() throws CoreException, InvalidSyntaxException, ClassNotFoundException, InstantiationException, IllegalAccessException
+		{
+		viewContentProvider=new TreeProvider(this);
 
-		viewContentProvider.resetData();
-	}
+//		viewContentProvider.resetData();
+		}
 
-	public void refresh() {
-		viewer.refresh();
-	}
+	public TreeViewer getTree()
+		{
+		return treeViewer;
+		}
 
-	public void createPartControl(Composite parent) {
-		viewer = new TreeViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
+	public void createPartControl(Composite parent)
+		{
+		treeViewer=new TreeViewer(parent, SWT.MULTI|SWT.H_SCROLL|SWT.V_SCROLL);
 //		drillDownAdapter=new DrillDownAdapter(viewer);
-		viewer.setContentProvider(viewContentProvider);
-		viewer.setLabelProvider(new ViewLabelProvider());
-		viewer.setSorter(new NameSorter());
-		viewer.setInput(getViewSite());
+		treeViewer.setContentProvider(viewContentProvider);
+		treeViewer.setLabelProvider(new ViewLabelProvider());
+		treeViewer.setSorter(new NameSorter());
+		treeViewer.setInput(getViewSite());
 
 		makeActions();
 		hookContextMenu();
 		hookDoubleClickAction();
 		contributeToActionBars();
-	}
+		}
 
-	private void hookContextMenu() {
-		MenuManager menuMgr = new MenuManager("#truc");
+	private void hookContextMenu()
+		{
+		MenuManager menuMgr=new MenuManager("#truc");
 		menuMgr.setRemoveAllWhenShown(true);
-		menuMgr.addMenuListener(new IMenuListener() {
-			public void menuAboutToShow(IMenuManager manager) {
-				LauncherView.this.fillContextMenu(manager);
-			}
-		});
-		Menu menu = menuMgr.createContextMenu(viewer.getControl());
-		viewer.getControl().setMenu(menu);
-		getSite().registerContextMenu(menuMgr, viewer);
-	}
+		menuMgr.addMenuListener(new IMenuListener()
+			{
+				public void menuAboutToShow(IMenuManager manager)
+					{
+					LauncherView.this.fillContextMenu(manager);
+					}
+			});
+		Menu menu=menuMgr.createContextMenu(treeViewer.getControl());
+		treeViewer.getControl().setMenu(menu);
+		getSite().registerContextMenu(menuMgr, treeViewer);
+		}
 
-	private void contributeToActionBars() {
-		IActionBars bars = getViewSite().getActionBars();
+	private void contributeToActionBars()
+		{
+		IActionBars bars=getViewSite().getActionBars();
 		fillLocalPullDown(bars.getMenuManager());
 		fillLocalToolBar(bars.getToolBarManager());
-	}
+		}
 
-	private void fillLocalPullDown(IMenuManager manager) {
+	private void fillLocalPullDown(IMenuManager manager)
+		{
 		// v sur la barre => changer le mode d'affichage
-	}
+		}
 
-	private void fillContextMenu(IMenuManager manager) {
-		ISelection selection = viewer.getSelection();
-		TreeNode n = (TreeNode) ((IStructuredSelection) selection).getFirstElement();
-		if (n != null && n.o instanceof ILaunchConfiguration) {
+	private void fillContextMenu(IMenuManager manager)
+		{
+		ISelection selection=treeViewer.getSelection();
+		TreeNode n=(TreeNode)((IStructuredSelection)selection).getFirstElement();
+		if(n!=null&&n.o instanceof ILaunchConfiguration)
+			{
 			manager.add(launch);
 			manager.add(debug);
-		}
+			}
 		manager.add(preference);
-	}
+		}
 
-	private void fillLocalToolBar(IToolBarManager manager) {
+	private void fillLocalToolBar(IToolBarManager manager)
+		{
 //		manager.add(action1);
-	}
+		}
 
-	private void makeActions() {
-		launch = new Action("Run") {
-			public void run() {
-				ISelection selection = viewer.getSelection();
-				TreeNode n = (TreeNode) ((IStructuredSelection) selection).getFirstElement();
-				if (n.o instanceof ILaunchConfiguration) {
-					try {
-						((ILaunchConfiguration) n.o).launch(ILaunchManager.RUN_MODE, null, true, true);
-					} catch (CoreException e) {
-						throw new RuntimeException(e);
+	private void makeActions()
+		{
+		launch=new Action("Run")
+			{
+				public void run()
+					{
+					ISelection selection=treeViewer.getSelection();
+					TreeNode n=(TreeNode)((IStructuredSelection)selection).getFirstElement();
+					if(n.o instanceof ILaunchConfiguration)
+						{
+						try
+							{
+							((ILaunchConfiguration)n.o).launch(ILaunchManager.RUN_MODE, null, true, true);
+							}
+						catch (CoreException e)
+							{
+							throw new RuntimeException(e);
+							}
+						}
 					}
-				}
-			}
-		};
-		debug = new Action("Debug") {
-			public void run() {
-				ISelection selection = viewer.getSelection();
-				TreeNode n = (TreeNode) ((IStructuredSelection) selection).getFirstElement();
-				if (n.o instanceof ILaunchConfiguration) {
-					try {
-						((ILaunchConfiguration) n.o).launch(ILaunchManager.DEBUG_MODE, null, true, true);
-					} catch (CoreException e) {
-						throw new RuntimeException(e);
+			};
+		debug=new Action("Debug")
+			{
+				public void run()
+					{
+					ISelection selection=treeViewer.getSelection();
+					TreeNode n=(TreeNode)((IStructuredSelection)selection).getFirstElement();
+					if(n.o instanceof ILaunchConfiguration)
+						{
+						try
+							{
+							((ILaunchConfiguration)n.o).launch(ILaunchManager.DEBUG_MODE, null, true, true);
+							}
+						catch (CoreException e)
+							{
+							throw new RuntimeException(e);
+							}
+						}
 					}
-				}
-			}
-		};
-		preference = new OpenRunConfigurations();
-	}
+			};
+		preference=new OpenRunConfigurations();
+		}
 
-	private void hookDoubleClickAction() {
-		viewer.addDoubleClickListener(new IDoubleClickListener() {
-			public void doubleClick(DoubleClickEvent event) {
-				launch.run();
-			}
-		});
-	}
+	private void hookDoubleClickAction()
+		{
+		treeViewer.addDoubleClickListener(new IDoubleClickListener()
+			{
+				public void doubleClick(DoubleClickEvent event)
+					{
+					launch.run();
+					}
+			});
+		}
 
 	/**
 	 * Passing the focus request to the viewer's control.
 	 */
-	public void setFocus() {
-		viewer.getControl().setFocus();
+	public void setFocus()
+		{
+		treeViewer.getControl().setFocus();
+		}
 	}
-}
