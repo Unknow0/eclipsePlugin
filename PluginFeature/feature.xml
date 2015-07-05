@@ -2,7 +2,7 @@
 <feature
       id="unknow.eclipse"
       label="EclipseLauncher"
-      version="1.1.12"
+      version="1.1.13"
       license-feature="com.gnu.lgpl"
       license-feature-version="3">
 

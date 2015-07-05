@@ -13,6 +13,8 @@ package unknow.eclipse.launcher;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.management.*;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
@@ -113,7 +115,6 @@ public class LauncherView extends ViewPart
 	public LauncherView() throws CoreException, InvalidSyntaxException, ClassNotFoundException, InstantiationException, IllegalAccessException
 		{
 		viewContentProvider=new TreeProvider(this);
-
 //		viewContentProvider.resetData();
 		}
 
@@ -126,6 +127,7 @@ public class LauncherView extends ViewPart
 		{
 		treeViewer=new TreeViewer(parent, SWT.MULTI|SWT.H_SCROLL|SWT.V_SCROLL);
 //		drillDownAdapter=new DrillDownAdapter(viewer);
+		
 		treeViewer.setContentProvider(viewContentProvider);
 		treeViewer.setLabelProvider(new ViewLabelProvider());
 		treeViewer.setSorter(new NameSorter());
