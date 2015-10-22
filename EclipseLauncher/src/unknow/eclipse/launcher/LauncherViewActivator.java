@@ -6,7 +6,7 @@
  * http://www.gnu.org/licenses/lgpl-3.0.html
  * 
  * Contributors:
- *     Unknow - initial API and implementation
+ * Unknow - initial API and implementation
  ******************************************************************************/
 package unknow.eclipse.launcher;
 

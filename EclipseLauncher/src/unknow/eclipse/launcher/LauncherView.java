@@ -13,8 +13,6 @@ package unknow.eclipse.launcher;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.management.*;
-
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
@@ -115,7 +113,6 @@ public class LauncherView extends ViewPart
 	public LauncherView() throws CoreException, InvalidSyntaxException, ClassNotFoundException, InstantiationException, IllegalAccessException
 		{
 		viewContentProvider=new TreeProvider(this);
-//		viewContentProvider.resetData();
 		}
 
 	public TreeViewer getTree()
@@ -126,8 +123,7 @@ public class LauncherView extends ViewPart
 	public void createPartControl(Composite parent)
 		{
 		treeViewer=new TreeViewer(parent, SWT.MULTI|SWT.H_SCROLL|SWT.V_SCROLL);
-//		drillDownAdapter=new DrillDownAdapter(viewer);
-		
+
 		treeViewer.setContentProvider(viewContentProvider);
 		treeViewer.setLabelProvider(new ViewLabelProvider());
 		treeViewer.setSorter(new NameSorter());
@@ -141,7 +137,7 @@ public class LauncherView extends ViewPart
 
 	private void hookContextMenu()
 		{
-		MenuManager menuMgr=new MenuManager("#truc");
+		MenuManager menuMgr=new MenuManager("#truc", "unknow.eclipse.launcher.menu");
 		menuMgr.setRemoveAllWhenShown(true);
 		menuMgr.addMenuListener(new IMenuListener()
 			{
@@ -233,7 +229,16 @@ public class LauncherView extends ViewPart
 			{
 				public void doubleClick(DoubleClickEvent event)
 					{
-					launch.run();
+					ISelection selection=treeViewer.getSelection();
+					TreeNode n=(TreeNode)((IStructuredSelection)selection).getFirstElement();
+					if(n.o instanceof ILaunchConfiguration)
+						{
+						launch.run();
+						}
+					else
+						{
+						treeViewer.setExpandedState(n, !treeViewer.getExpandedState(n));
+						}
 					}
 			});
 		}

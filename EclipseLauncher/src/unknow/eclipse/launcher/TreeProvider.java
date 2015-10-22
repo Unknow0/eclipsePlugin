@@ -43,7 +43,6 @@ public class TreeProvider implements IStructuredContentProvider, ITreeContentPro
 		local=PlatformUI.getWorkbench().createLocalWorkingSetManager();
 
 		otherProject=local.createWorkingSet("Other Project", new IAdaptable[0]);
-//		manager.addWorkingSet(otherProject);
 		loadData();
 		manager.addPropertyChangeListener(this);
 		local.addPropertyChangeListener(this);
@@ -153,7 +152,10 @@ public class TreeProvider implements IStructuredContentProvider, ITreeContentPro
 		try
 			{
 			IProject project=getProject(conf);
+			System.err.println("launchAdded : "+project.getName());
 			TreeNode treeNode=nodesByObject.get(project);
+
+			System.err.println("launchAdded : "+treeNode);
 			if(treeNode==null)
 				{
 				// TODO
@@ -314,7 +316,7 @@ public class TreeProvider implements IStructuredContentProvider, ITreeContentPro
 				}
 			childs.add(c);
 
-			if(hasChildren(a)&&view.getTree()!=null)
+			if(view.getTree()!=null)
 				view.getTree().add(n==root?view.getViewSite():n, a);
 			}
 
