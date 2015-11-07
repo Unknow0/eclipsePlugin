@@ -110,7 +110,6 @@ public class TreeProvider implements IStructuredContentProvider, ITreeContentPro
 			listByProject.add(l[i]);
 			}
 		root.buildChild();
-		System.out.flush();
 		}
 
 	public void inputChanged(Viewer v, Object oldInput, Object newInput)
