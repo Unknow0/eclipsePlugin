@@ -1,0 +1,277 @@
+package unknow.eclipse.launcher;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IResourceDeltaVisitor;
+import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchConfigurationListener;
+import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.ui.ILocalWorkingSetManager;
+import org.eclipse.ui.IWorkingSet;
+import org.eclipse.ui.IWorkingSetManager;
+import org.eclipse.ui.PlatformUI;
+
+public class Resources implements IResourceChangeListener, IPropertyChangeListener, ILaunchConfigurationListener
+	{
+	private static final Pattern var=Pattern.compile("\\$\\{([^:]+):([^}]+)}");
+	private static Resources self=new Resources();
+	private IWorkingSetManager manager;
+	private IWorkspaceRoot root;
+
+	private ILocalWorkingSetManager localManager;
+	private IWorkingSet otherProject;
+
+	private Map<IProject,List<ILaunchConfiguration>> launch=new HashMap<>();
+
+	private Resources()
+		{
+		localManager=PlatformUI.getWorkbench().createLocalWorkingSetManager();
+		otherProject=localManager.createWorkingSet("Other Project", new IAdaptable[0]);
+
+		manager=PlatformUI.getWorkbench().getWorkingSetManager();
+		IWorkspace workspace=ResourcesPlugin.getWorkspace();
+		root=workspace.getRoot();
+		workspace.addResourceChangeListener(this);
+		manager.addPropertyChangeListener(this);
+		update();
+		}
+
+	public void update()
+		{
+		launch.clear();
+		try
+			{
+			ILaunchManager launchManager=DebugPlugin.getDefault().getLaunchManager();
+			launchManager.addLaunchConfigurationListener(this);
+			for(ILaunchConfiguration c:launchManager.getLaunchConfigurations())
+				{
+				IProject p=project(c);
+				List<ILaunchConfiguration> list=launch.get(p);
+				if(list==null)
+					launch.put(p, list=new ArrayList<>());
+				list.add(c);
+				}
+			}
+		catch (Exception e)
+			{
+			e.printStackTrace();
+			}
+
+		Set<IProject> projects=new HashSet<IProject>();
+		for(IProject p:project())
+			projects.add(p);
+		System.out.println("All: "+projects);
+		for(IWorkingSet w:manager.getAllWorkingSets())
+			projects.removeAll(projects(w));
+
+		otherProject.setElements(projects.toArray(new IAdaptable[0]));
+		System.out.println("Other: "+projects);
+		}
+
+	public static Resources getInstance()
+		{
+		return self;
+		}
+
+	public List<IWorkingSet> workingset()
+		{
+		IWorkingSet[] allWorkingSets=manager.getAllWorkingSets();
+		List<IWorkingSet> list=new ArrayList<>(allWorkingSets.length+1);
+		if(valid(otherProject))
+			list.add(otherProject);
+		for(IWorkingSet w:allWorkingSets)
+			{
+			if(valid(w))
+				list.add(w);
+			}
+		return list;
+		}
+
+	private boolean valid(IWorkingSet w)
+		{
+		if(w.isEmpty())
+			return false;
+		for(IAdaptable e:w.getElements())
+			{
+			if(e.getAdapter(IProject.class)!=null)
+				return true;
+			}
+		return false;
+		}
+
+	public IProject[] project()
+		{
+		return root.getProjects();
+		}
+
+	public List<IProject> projects(IWorkingSet w)
+		{
+		IAdaptable[] elements=w.getElements();
+		List<IProject> list=new ArrayList<>(elements.length);
+		for(int i=0; i<elements.length; i++)
+			{
+			IProject p=elements[i].getAdapter(IProject.class);
+			if(p!=null)
+				list.add(p);
+			}
+		return list;
+		}
+
+	private static final ILaunchConfiguration[] L0=new ILaunchConfiguration[0];
+
+	public ILaunchConfiguration[] launcher(IProject parent)
+		{
+		List<ILaunchConfiguration> list=launch.get(parent);
+		return list==null?L0:list.toArray(L0);
+		}
+
+	private IProject project(ILaunchConfiguration conf) throws Exception
+		{
+		String p=conf.getAttribute("org.eclipse.jdt.launching.PROJECT_ATTR", (String)null);
+		if(p!=null)
+			return root.getProject(p);
+		if(p==null)
+			{
+			p=conf.getAttribute("org.eclipse.jdt.launching.WORKING_DIRECTORY", (String)null);
+			if(p!=null)
+				{
+				Matcher m=var.matcher(p);
+				if(m.matches())
+					{
+					switch (m.group(1))
+						{
+						case "project_loc":
+							return root.getProject(m.group(2));
+						case "workspace_loc":
+							ProjectLocator loc=new ProjectLocator(m.group(2));
+							root.accept(loc);
+						}
+					}
+				}
+			}
+//		else
+//			project=projects.get(p);
+//		System.err.println(conf.getName());
+//		for(Map.Entry<String,Object> e:conf.getAttributes().entrySet())
+//			{
+//			System.err.println("	"+e.getKey()+": "+e.getValue());
+//			}
+		return null /*project*/;
+		}
+
+	@Override
+	public void resourceChanged(IResourceChangeEvent e)
+		{
+		if(e.getType()!=IResourceChangeEvent.POST_CHANGE)
+			return;
+
+		try
+			{
+			e.getDelta().accept(new IResourceDeltaVisitor()
+				{
+				public boolean visit(IResourceDelta delta) throws CoreException
+					{
+					if(delta.getResource() instanceof IWorkspaceRoot)
+						return true;
+					if(!(delta.getResource() instanceof IProject))
+						return false;
+					IProject p=(IProject)delta.getResource();
+					switch (delta.getKind())
+						{
+						case IResourceDelta.ADDED:
+							localManager.addToWorkingSets(p, new IWorkingSet[] {otherProject});
+							break;
+						case IResourceDelta.REMOVED:
+							break;
+						}
+					LauncherView.refresh();
+					return false;
+					}
+
+				});
+			}
+		catch (CoreException e1)
+			{
+			e1.printStackTrace();
+			}
+		}
+
+	@Override
+	public void propertyChange(PropertyChangeEvent e)
+		{
+		if(e.getNewValue()==otherProject||!(e.getNewValue() instanceof IWorkingSet))
+			return;
+
+		IWorkingSet s=(IWorkingSet)e.getNewValue();
+		System.out.println("refresh: "+s.getName());
+		LauncherView.refresh();
+		}
+
+	@Override
+	public void launchConfigurationAdded(ILaunchConfiguration arg0)
+		{
+		LauncherView.refresh();
+		}
+
+	@Override
+	public void launchConfigurationChanged(ILaunchConfiguration arg0)
+		{
+		LauncherView.refresh();
+		}
+
+	@Override
+	public void launchConfigurationRemoved(ILaunchConfiguration arg0)
+		{
+		LauncherView.refresh();
+		}
+
+	private static class ProjectLocator implements IResourceVisitor
+		{
+		private String path;
+		private IProject project;
+		private int l=0;
+
+		public ProjectLocator(String path)
+			{
+			this.path=path;
+			}
+
+		@Override
+		public boolean visit(IResource r) throws CoreException
+			{
+			String p=r.getFullPath().toString();
+			if(p.length()<path.length()&&path.startsWith(p)||p.startsWith(path))
+				{
+				if(l>p.length())
+					{
+					l=p.length();
+					project=r.getProject();
+					System.out.println("=> "+path+": "+project);
+					}
+				return true;
+				}
+			return false;
+			}
+		}
+	}
