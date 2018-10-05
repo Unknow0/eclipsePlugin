@@ -2,6 +2,7 @@ package unknow.eclipse.launcher;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +12,7 @@ import org.eclipse.ui.IWorkingSet;
 
 public abstract class LauncherTreeNode<T>
 	{
+	public static final LauncherTreeNode<?>[] EMPTY=new LauncherTreeNode[0];
 	private static Map<Object,LauncherTreeNode<?>> nodesByObj=new HashMap<>();
 	private static Map<String,LauncherTreeNode<?>> nodesById=new HashMap<>();
 	private LauncherTreeNode<?> parent;
@@ -57,7 +59,22 @@ public abstract class LauncherTreeNode<T>
 	public LauncherTreeNode<?>[] child()
 		{
 		if(child==null)
-			child=buildChild();
+			{
+			List<LauncherTreeNode<?>> l=buildChild();
+			Iterator<LauncherTreeNode<?>> it=l.iterator();
+			while (it.hasNext())
+				{
+				LauncherTreeNode<?> next=it.next();
+				LauncherTreeNode<?>[] c=next.child();
+				System.out.println(next.getId()+" "+c.length);
+				if(c!=EMPTY&&c.length==0)
+					{
+					it.remove();
+					System.out.println("	remove");
+					}
+				}
+			child=l.toArray(EMPTY);
+			}
 		return child;
 		}
 
@@ -101,7 +118,7 @@ public abstract class LauncherTreeNode<T>
 
 	public abstract String toString();
 
-	protected abstract LauncherTreeNode<?>[] buildChild();
+	protected abstract List<LauncherTreeNode<?>> buildChild();
 
 	public static class RootNode extends LauncherTreeNode<Object>
 		{
@@ -113,12 +130,12 @@ public abstract class LauncherTreeNode<T>
 			}
 
 		@Override
-		protected LauncherTreeNode<?>[] buildChild()
+		protected List<LauncherTreeNode<?>> buildChild()
 			{
 			List<IWorkingSet> ws=Resources.getInstance().workingset();
-			LauncherTreeNode<?>[] child=new LauncherTreeNode[ws.size()];
-			for(int i=0; i<child.length; i++)
-				child[i]=new WSNode(this, ws.get(i));
+			List<LauncherTreeNode<?>> child=new ArrayList<>(ws.size());
+			for(IWorkingSet w:ws)
+				child.add(new WSNode(this, w));
 			return child;
 			}
 
@@ -144,12 +161,12 @@ public abstract class LauncherTreeNode<T>
 			}
 
 		@Override
-		protected LauncherTreeNode<?>[] buildChild()
+		protected List<LauncherTreeNode<?>> buildChild()
 			{
 			List<IProject> projects=Resources.getInstance().projects(obj());
-			LauncherTreeNode<?>[] child=new LauncherTreeNode[projects.size()];
-			for(int i=0; i<child.length; i++)
-				child[i]=new ProjectNode(this, projects.get(i));
+			List<LauncherTreeNode<?>> child=new ArrayList<>(projects.size());
+			for(IProject p:projects)
+				child.add(new ProjectNode(this, p));
 			return child;
 			}
 
@@ -174,12 +191,13 @@ public abstract class LauncherTreeNode<T>
 			}
 
 		@Override
-		protected LauncherTreeNode<?>[] buildChild()
+		protected List<LauncherTreeNode<?>> buildChild()
 			{
-			ILaunchConfiguration[] launcher=Resources.getInstance().launcher(obj());
-			LauncherTreeNode<?>[] child=new LauncherTreeNode<?>[launcher.length];
-			for(int i=0; i<child.length; i++)
-				child[i]=new LaunchNode(this, launcher[i]);
+			List<ILaunchConfiguration> launcher=Resources.getInstance().launcher(obj());
+			List<LauncherTreeNode<?>> child=new ArrayList<>(launcher.size());
+			for(ILaunchConfiguration l:launcher)
+				child.add(new LaunchNode(this, l));
+			System.out.println(getId()+": "+child);
 			return child;
 			}
 		}
@@ -199,9 +217,15 @@ public abstract class LauncherTreeNode<T>
 			}
 
 		@Override
-		protected LauncherTreeNode<?>[] buildChild()
+		public LauncherTreeNode<?>[] child()
 			{
-			return new LauncherTreeNode[0];
+			return EMPTY;
+			}
+
+		@Override
+		protected List<LauncherTreeNode<?>> buildChild()
+			{
+			return null;
 			}
 		}
 	}

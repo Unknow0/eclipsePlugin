@@ -1,6 +1,8 @@
 package unknow.eclipse.launcher;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +36,8 @@ import org.eclipse.ui.PlatformUI;
 
 public class Resources implements IResourceChangeListener, IPropertyChangeListener, ILaunchConfigurationListener
 	{
+	private static final Set<String> EXCLUDED_WS=new HashSet<>(Arrays.asList("Java Test Sources", "Java Main Sources"));
+
 	private static final Pattern var=Pattern.compile("\\$\\{([^:]+):([^}]+)}");
 	private static Resources self=new Resources();
 	private IWorkingSetManager manager;
@@ -81,12 +85,11 @@ public class Resources implements IResourceChangeListener, IPropertyChangeListen
 		Set<IProject> projects=new HashSet<IProject>();
 		for(IProject p:project())
 			projects.add(p);
-		System.out.println("All: "+projects);
+
 		for(IWorkingSet w:manager.getAllWorkingSets())
 			projects.removeAll(projects(w));
 
 		otherProject.setElements(projects.toArray(new IAdaptable[0]));
-		System.out.println("Other: "+projects);
 		}
 
 	public static Resources getInstance()
@@ -132,18 +135,22 @@ public class Resources implements IResourceChangeListener, IPropertyChangeListen
 		for(int i=0; i<elements.length; i++)
 			{
 			IProject p=elements[i].getAdapter(IProject.class);
-			if(p!=null)
+			if(valid(p))
 				list.add(p);
 			}
 		return list;
 		}
 
-	private static final ILaunchConfiguration[] L0=new ILaunchConfiguration[0];
+	private boolean valid(IProject p)
+		{
+		List<ILaunchConfiguration> list=launch.get(p);
+		return list!=null&&!list.isEmpty();
+		}
 
-	public ILaunchConfiguration[] launcher(IProject parent)
+	public List<ILaunchConfiguration> launcher(IProject parent)
 		{
 		List<ILaunchConfiguration> list=launch.get(parent);
-		return list==null?L0:list.toArray(L0);
+		return list==null?Collections.emptyList():list;
 		}
 
 	private IProject project(ILaunchConfiguration conf) throws Exception
@@ -196,15 +203,6 @@ public class Resources implements IResourceChangeListener, IPropertyChangeListen
 						return true;
 					if(!(delta.getResource() instanceof IProject))
 						return false;
-					IProject p=(IProject)delta.getResource();
-					switch (delta.getKind())
-						{
-						case IResourceDelta.ADDED:
-							localManager.addToWorkingSets(p, new IWorkingSet[] {otherProject});
-							break;
-						case IResourceDelta.REMOVED:
-							break;
-						}
 					LauncherView.refresh();
 					return false;
 					}
@@ -222,8 +220,9 @@ public class Resources implements IResourceChangeListener, IPropertyChangeListen
 		{
 		if(e.getNewValue()==otherProject||!(e.getNewValue() instanceof IWorkingSet))
 			return;
-
 		IWorkingSet s=(IWorkingSet)e.getNewValue();
+		if(EXCLUDED_WS.contains(s.getName()))
+			return;
 		System.out.println("refresh: "+s.getName());
 		LauncherView.refresh();
 		}

@@ -209,7 +209,7 @@ public class LauncherView extends ViewPart
 
 	public static void refresh()
 		{
-		Display.getDefault().asyncExec(new Runnable()
+		Display.getDefault().syncExec(new Runnable()
 			{
 			public void run()
 				{

@@ -1,7 +1,5 @@
 package unknow.eclipse.launcher;
 
-import java.util.Arrays;
-
 import org.eclipse.jface.viewers.ITreeContentProvider;
 
 import unknow.eclipse.launcher.LauncherTreeNode.RootNode;

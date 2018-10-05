@@ -60,13 +60,11 @@ public class LauncherTreeState
 
 	public static String getState()
 		{
-		System.out.println("save state "+set);
 		return String.join(",", set);
 		}
 
 	public static void apply(TreeViewer treeViewer)
 		{
-		System.out.println("apply state "+set);
 		treeViewer.addTreeListener(listener);
 		if(set.isEmpty())
 			return;
@@ -77,5 +75,9 @@ public class LauncherTreeState
 			if(node!=null)
 				treeViewer.setExpandedState(node, true);
 			}
+
+		set.clear();
+		for(Object o:treeViewer.getExpandedElements())
+			set.add(((LauncherTreeNode<?>)o).getId());
 		}
 	}
