@@ -66,12 +66,8 @@ public abstract class LauncherTreeNode<T>
 				{
 				LauncherTreeNode<?> next=it.next();
 				LauncherTreeNode<?>[] c=next.child();
-				System.out.println(next.getId()+" "+c.length);
-				if(c!=EMPTY&&c.length==0)
-					{
+				if(c!=EMPTY && c.length==0)
 					it.remove();
-					System.out.println("	remove");
-					}
 				}
 			child=l.toArray(EMPTY);
 			}
@@ -197,7 +193,6 @@ public abstract class LauncherTreeNode<T>
 			List<LauncherTreeNode<?>> child=new ArrayList<>(launcher.size());
 			for(ILaunchConfiguration l:launcher)
 				child.add(new LaunchNode(this, l));
-			System.out.println(getId()+": "+child);
 			return child;
 			}
 		}

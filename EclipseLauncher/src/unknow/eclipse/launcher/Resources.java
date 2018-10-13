@@ -190,9 +190,9 @@ public class Resources implements IResourceChangeListener, IPropertyChangeListen
 	@Override
 	public void resourceChanged(IResourceChangeEvent e)
 		{
+		int ignore=IResourceDelta.NO_CHANGE|IResourceDelta.ADDED_PHANTOM|IResourceDelta.REMOVED_PHANTOM|IResourceDelta.SYNC|IResourceDelta.MARKERS;
 		if(e.getType()!=IResourceChangeEvent.POST_CHANGE)
 			return;
-
 		try
 			{
 			e.getDelta().accept(new IResourceDeltaVisitor()
@@ -203,6 +203,9 @@ public class Resources implements IResourceChangeListener, IPropertyChangeListen
 						return true;
 					if(!(delta.getResource() instanceof IProject))
 						return false;
+					if((delta.getKind()&ignore)!=0)
+						return false;
+					System.out.println("refresh resourceChanged: "+delta.getResource());
 					LauncherView.refresh();
 					return false;
 					}
@@ -223,25 +226,28 @@ public class Resources implements IResourceChangeListener, IPropertyChangeListen
 		IWorkingSet s=(IWorkingSet)e.getNewValue();
 		if(EXCLUDED_WS.contains(s.getName()))
 			return;
-		System.out.println("refresh: "+s.getName());
+		System.out.println("refresh property changed: "+s.getName());
 		LauncherView.refresh();
 		}
 
 	@Override
-	public void launchConfigurationAdded(ILaunchConfiguration arg0)
+	public void launchConfigurationAdded(ILaunchConfiguration l)
 		{
+		System.out.println("refresh launchAdded: "+l.getName());
 		LauncherView.refresh();
 		}
 
 	@Override
-	public void launchConfigurationChanged(ILaunchConfiguration arg0)
+	public void launchConfigurationChanged(ILaunchConfiguration l)
 		{
+		System.out.println("refresh launcheChanged: "+l.getName());
 		LauncherView.refresh();
 		}
 
 	@Override
-	public void launchConfigurationRemoved(ILaunchConfiguration arg0)
+	public void launchConfigurationRemoved(ILaunchConfiguration l)
 		{
+		System.out.println("refresh launcheRemoved: "+l.getName());
 		LauncherView.refresh();
 		}
 
@@ -266,7 +272,6 @@ public class Resources implements IResourceChangeListener, IPropertyChangeListen
 					{
 					l=p.length();
 					project=r.getProject();
-					System.out.println("=> "+path+": "+project);
 					}
 				return true;
 				}
