@@ -13,10 +13,6 @@ import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceChangeEvent;
-import org.eclipse.core.resources.IResourceChangeListener;
-import org.eclipse.core.resources.IResourceDelta;
-import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -34,7 +30,7 @@ import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.IWorkingSetManager;
 import org.eclipse.ui.PlatformUI;
 
-public class Resources implements IResourceChangeListener, IPropertyChangeListener, ILaunchConfigurationListener
+public class Resources implements IPropertyChangeListener, ILaunchConfigurationListener
 	{
 	private static final Set<String> EXCLUDED_WS=new HashSet<>(Arrays.asList("Java Test Sources", "Java Main Sources"));
 
@@ -56,7 +52,6 @@ public class Resources implements IResourceChangeListener, IPropertyChangeListen
 		manager=PlatformUI.getWorkbench().getWorkingSetManager();
 		IWorkspace workspace=ResourcesPlugin.getWorkspace();
 		root=workspace.getRoot();
-		workspace.addResourceChangeListener(this);
 		manager.addPropertyChangeListener(this);
 		update();
 		}
@@ -185,37 +180,6 @@ public class Resources implements IResourceChangeListener, IPropertyChangeListen
 //			System.err.println("	"+e.getKey()+": "+e.getValue());
 //			}
 		return null /*project*/;
-		}
-
-	@Override
-	public void resourceChanged(IResourceChangeEvent e)
-		{
-		int ignore=IResourceDelta.NO_CHANGE|IResourceDelta.ADDED_PHANTOM|IResourceDelta.REMOVED_PHANTOM|IResourceDelta.SYNC|IResourceDelta.MARKERS;
-		if(e.getType()!=IResourceChangeEvent.POST_CHANGE)
-			return;
-		try
-			{
-			e.getDelta().accept(new IResourceDeltaVisitor()
-				{
-				public boolean visit(IResourceDelta delta) throws CoreException
-					{
-					if(delta.getResource() instanceof IWorkspaceRoot)
-						return true;
-					if(!(delta.getResource() instanceof IProject))
-						return false;
-					if((delta.getKind()&ignore)!=0)
-						return false;
-					System.out.println("refresh resourceChanged: "+delta.getResource());
-					LauncherView.refresh();
-					return false;
-					}
-
-				});
-			}
-		catch (CoreException e1)
-			{
-			e1.printStackTrace();
-			}
 		}
 
 	@Override
