@@ -13,15 +13,12 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.ui.IDecoratorManager;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 public class LauncherTreeName extends LabelProvider
 	{
 	private final Map<String,Image> cache=new HashMap<>();
 
-	private IDecoratorManager decoratorManager=PlatformUI.getWorkbench().getDecoratorManager();
 	private ILabelProvider provider=WorkbenchLabelProvider.getDecoratingWorkbenchLabelProvider();
 
 	public String getText(Object obj)
@@ -39,7 +36,7 @@ public class LauncherTreeName extends LabelProvider
 			obj=((LauncherTreeNode<?>)obj).obj();
 		Image img=provider.getImage(obj);
 		if(img!=null)
-			return decoratorManager.decorateImage(img, obj);
+			return img;
 
 		try
 			{
